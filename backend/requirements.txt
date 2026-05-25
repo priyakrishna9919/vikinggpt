@@ -1,0 +1,30 @@
+# Web framework
+fastapi==0.111.0
+uvicorn[standard]==0.30.1
+
+# Environment variables
+python-dotenv==1.0.1
+
+# Web scraping — Playwright for dynamic JS-rendered CSU pages
+playwright==1.44.0
+
+# OpenAI SDK — used for generating text embeddings
+openai==1.30.1
+
+# Vector database — ChromaDB stores and retrieves embedded CSU content
+chromadb==0.5.0
+
+# Anthropic Claude SDK — powers the chat responses
+anthropic==0.28.0
+
+# HTTP client for async requests
+httpx==0.27.0
+
+# Data validation
+pydantic==2.7.2
+
+# Scheduling — re-scrape CSU pages on a cron schedule
+apscheduler==3.10.4
+
+# Logging
+loguru==0.7.2

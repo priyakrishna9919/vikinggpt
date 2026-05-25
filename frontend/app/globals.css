@@ -1,0 +1,12 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --csu-green: #0d4f2e;
+  --csu-green-dark: #093d23;
+  --csu-green-light: #6abf69;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
