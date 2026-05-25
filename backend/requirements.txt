@@ -5,19 +5,20 @@ uvicorn[standard]==0.30.1
 # Environment variables
 python-dotenv==1.0.1
 
-# Web scraping — Playwright for dynamic JS-rendered CSU pages
+# Web scraping — Playwright for JS-rendered CSU pages
 playwright==1.44.0
 
-# OpenAI SDK — used for generating text embeddings
-openai==1.30.1
+# Local embeddings — runs on your machine, no API key needed
+# Downloads all-MiniLM-L6-v2 (~90MB) automatically on first run
+sentence-transformers==3.0.1
 
-# Vector database — ChromaDB stores and retrieves embedded CSU content
+# Vector database — ChromaDB stores and retrieves embeddings
 chromadb==0.5.0
 
-# Anthropic Claude SDK — powers the chat responses
+# Anthropic Claude SDK — powers chat responses
 anthropic==0.28.0
 
-# HTTP client for async requests
+# HTTP client
 httpx==0.27.0
 
 # Data validation

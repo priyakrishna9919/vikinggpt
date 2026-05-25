@@ -9,7 +9,7 @@ A BearcatGPT-style AI assistant for CSU students. Built with a production-grade 
 | Frontend   | Next.js 14 + Tailwind CSS    |
 | Backend    | FastAPI + Uvicorn            |
 | Scraping   | Playwright (headless Chrome) |
-| Embeddings | OpenAI text-embedding-3-small|
+| Embeddings | sentence-transformers (local, free)|
 | Vector DB  | ChromaDB (persistent)        |
 | LLM        | Claude (claude-sonnet-4)     |
 | Deployment | Railway (API) + Vercel (UI)  |

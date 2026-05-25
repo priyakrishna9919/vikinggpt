@@ -1,51 +1,45 @@
 # =============================================
-# OpenAI Embeddings
-# Converts text chunks into vector embeddings
-# using OpenAI text-embedding-3-small model
+# Local Embeddings — sentence-transformers
+# Runs 100% locally, no API key, no cost
+# Uses all-MiniLM-L6-v2 — fast, accurate,
+# great for RAG on short/medium text chunks
 # =============================================
 
-import os
-from openai import OpenAI
+from sentence_transformers import SentenceTransformer
 from loguru import logger
 
-# Initialize the OpenAI client with the API key from environment
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+# Load the model once at module level so it's not reloaded on every call
+# Downloads automatically on first run (~90MB), cached after that
+MODEL_NAME = "all-MiniLM-L6-v2"
+_model = None
 
-# Model to use — small is fast and cheap, good for RAG
-EMBEDDING_MODEL = "text-embedding-3-small"
+
+def get_model() -> SentenceTransformer:
+    """Lazy-load the model — only downloads on first call."""
+    global _model
+    if _model is None:
+        logger.info(f"Loading embedding model: {MODEL_NAME}")
+        _model = SentenceTransformer(MODEL_NAME)
+        logger.info("Embedding model loaded")
+    return _model
 
 
 def embed_text(text: str) -> list[float]:
     """
     Generate a vector embedding for a single text string.
-    Returns a list of floats (1536 dimensions for text-embedding-3-small).
+    Returns a list of floats (384 dimensions for MiniLM).
     """
-    response = client.embeddings.create(
-        input=text,
-        model=EMBEDDING_MODEL
-    )
-    return response.data[0].embedding
+    model = get_model()
+    embedding = model.encode(text, convert_to_numpy=True)
+    return embedding.tolist()
 
 
 def embed_batch(texts: list[str]) -> list[list[float]]:
     """
-    Generate embeddings for a batch of text chunks.
-    OpenAI allows up to 2048 inputs per request.
-    We batch in groups of 100 to stay safe.
+    Generate embeddings for a list of text chunks in one pass.
+    sentence-transformers handles batching internally — fast and efficient.
     """
-    all_embeddings = []
-
-    for i in range(0, len(texts), 100):
-        batch = texts[i:i + 100]
-        logger.info(f"Embedding batch {i // 100 + 1} ({len(batch)} chunks)")
-
-        response = client.embeddings.create(
-            input=batch,
-            model=EMBEDDING_MODEL
-        )
-
-        # Preserve original order from the response
-        batch_embeddings = [item.embedding for item in sorted(response.data, key=lambda x: x.index)]
-        all_embeddings.extend(batch_embeddings)
-
-    return all_embeddings
+    model = get_model()
+    logger.info(f"Embedding {len(texts)} chunks locally...")
+    embeddings = model.encode(texts, convert_to_numpy=True, show_progress_bar=True)
+    return [e.tolist() for e in embeddings]
