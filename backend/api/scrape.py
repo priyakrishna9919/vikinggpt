@@ -2,17 +2,12 @@
 # Scrape API Router
 # POST /api/scrape/run — trigger a full scrape
 # GET  /api/scrape/status — check last run info
-#
-# Fix: Playwright can't run in FastAPI's async
-# event loop on Windows — use a thread instead
 # =============================================
 
 from fastapi import APIRouter, BackgroundTasks
 from datetime import datetime
 from loguru import logger
 import traceback
-import asyncio
-import concurrent.futures
 
 from scraper.crawler import run_scraper
 from vectordb.store import ingest_pages
@@ -23,30 +18,20 @@ scrape_status = {"running": False, "last_run": None, "pages_scraped": 0, "error"
 
 
 def run_full_pipeline():
-    """
-    Runs the full scrape + embed + ingest pipeline.
-    Called inside a ThreadPoolExecutor so Playwright
-    can create its own event loop without conflicting
-    with FastAPI's event loop (Windows fix).
-    """
+    """Full scrape + embed + ingest pipeline."""
     global scrape_status
     scrape_status["running"] = True
     scrape_status["error"] = None
-    logger.info("Starting CSU scrape pipeline in thread...")
+    logger.info("Starting CSU scrape pipeline...")
 
     try:
-        # Playwright needs its own event loop — create one in this thread
-        import asyncio
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-
-        logger.info("Step 1: Launching Playwright scraper...")
+        logger.info("Step 1: Scraping CSU pages...")
         pages = run_scraper()
-        logger.info(f"Step 1 done — scraped {len(pages)} pages")
+        logger.info(f"Step 1 done — {len(pages)} pages scraped")
 
         logger.info("Step 2: Embedding and ingesting into ChromaDB...")
         ingest_pages(pages)
-        logger.info("Step 2 complete")
+        logger.info("Step 2 done")
 
         scrape_status["pages_scraped"] = len(pages)
         scrape_status["last_run"] = datetime.utcnow().isoformat()
@@ -61,24 +46,14 @@ def run_full_pipeline():
 
 
 @router.post("/run")
-async def trigger_scrape():
-    """
-    Trigger a full scrape + ingest.
-    Runs in a thread pool so Playwright works on Windows.
-    Returns immediately — poll /status for progress.
-    """
+async def trigger_scrape(background_tasks: BackgroundTasks):
+    """Trigger scrape + ingest as a background task."""
     if scrape_status["running"]:
-        return {"message": "Scrape already in progress", "status": scrape_status}
-
-    # Run in a separate thread — fixes Windows asyncio + Playwright conflict
-    loop = asyncio.get_event_loop()
-    executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
-    loop.run_in_executor(executor, run_full_pipeline)
-
-    return {"message": "Scrape started in thread", "status": scrape_status}
+        return {"message": "Already running", "status": scrape_status}
+    background_tasks.add_task(run_full_pipeline)
+    return {"message": "Scrape started", "status": scrape_status}
 
 
 @router.get("/status")
 async def get_status():
-    """Return current scraper state."""
     return scrape_status
